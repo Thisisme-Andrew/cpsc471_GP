@@ -21,14 +21,12 @@ conn.connect(
     else
     {
         console.log("Connection established.");
-        createTable("test", {"id": "serial", "name" : "VARCHAR(50)", "quantity": "INTEGER"})
+        // createTable("test", {"id": "serial", "name" : "VARCHAR(50)", "quantity": "INTEGER"})
+        // insertRow("test", {"id": 5, "name" : "its me", "quantity": 10});
+        // insertRow("test", {"name" : "its me", "quantity": 10});
+        // updateRow("test", "quantity", "15", "id", "1");
     }
 });
-
-// make columns and values both an array
-const insert = (tableName, columns, values) => {
-
-}
 
 // columnsAndTypes should be stored as an object, where key is the column name and value is the type. The first pair should be the primary key
 const createTable = async (tableName, columnsAndTypes) => {
@@ -36,13 +34,14 @@ const createTable = async (tableName, columnsAndTypes) => {
         deleteTable(tableName);
     }catch (e) {
         console.log(e);
+        return;
     }
+
     let iterator = 0;
     let queryString = "CREATE TABLE ";
     queryString = queryString.concat(tableName, " (");
 
-    for (const key in columnsAndTypes) {
-        const columnName = key;
+    for (const columnName in columnsAndTypes) {
         const columnType = columnsAndTypes[key];
 
         if(iterator == 0) {
@@ -74,6 +73,52 @@ const deleteTable = (tableName) => {
             console.log("Dropped " + tableName + " table if existed.");
         }
     )
+}
+
+// columnsAndValues is object where key = column name, value = row value
+const insertRow = (tableName, columnsAndValues) => {
+    let iterator = 0;
+    let queryString = "INSERT INTO ";
+    let valuesToBeAdded = [];
+    queryString = queryString.concat(tableName, " (");
+
+    for (const columnName in columnsAndValues) {
+        let columnValue = columnsAndValues[columnName];
+        valuesToBeAdded.push(columnValue);
+
+        if(iterator == Object.keys(columnsAndValues).length - 1) {
+            queryString = queryString.concat(columnName, ") VALUES (?,?);");
+            break;
+        }else {
+            queryString = queryString.concat(columnName, ", ");    
+        }
+
+        iterator++;
+    }
+
+    conn.query(queryString, valuesToBeAdded,
+        function (err, results, fields) {
+            if (err) throw err;
+            else console.log('Inserted ' + results.affectedRows + ' row(s).');
+        }
+    )
+
+    endQuery();
+}
+
+//Values must be passed in as strings
+const updateRow = (tableName, columnName, value, primaryKeyName, primaryKeyValue) => {
+    let queryString = "UPDATE ";
+    queryString = queryString.concat(tableName, " SET ", columnName, " = '", value, "' WHERE ", primaryKeyName, " = '", primaryKeyValue, "';");
+    
+    conn.query(queryString, 
+        function (err, result) {
+            if (err) throw err;
+            console.log(result.affectedRows + " record(s) updated");
+        }
+    );
+
+    endQuery();
 }
 
 const endQuery = () => {
